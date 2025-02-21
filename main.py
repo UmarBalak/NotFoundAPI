@@ -6,6 +6,7 @@ from enum import Enum
 from models import Base, engine, User, SessionLocal
 from sqlalchemy.orm import Session as SQLAlchemySession
 from sqlalchemy import or_
+from passlib.context import CryptContext
 
 try:
     Base.metadata.create_all(bind=engine)
@@ -39,16 +40,25 @@ class LoginUser(BaseModel):
 
 app = FastAPI()
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
 @app.post("/register")
 def register_user(user: CreateUser, db: SQLAlchemySession = Depends(get_db)):
     user_exist = db.query(User).filter(User.email == user.email).first()
     if user_exist:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    hashed_password = get_password_hash(user.password)
     new_user = User(
         name=user.name,
         email=user.email,
-        password=user.password
+        password=hashed_password
     )
     
     db.add(new_user)
@@ -60,14 +70,13 @@ def register_user(user: CreateUser, db: SQLAlchemySession = Depends(get_db)):
 @app.post("/login")
 def login(login_data: LoginUser, db: SQLAlchemySession = Depends(get_db)):
     user = db.query(User).filter(User.email == login_data.email).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email")
+    if not user or not verify_password(login_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     return {
         "message": "Login successful",
         "user": {
             "id": user.id,
             "name": user.name,
-            "email": user.email,
-            "password": user.password
+            "email": user.email
         }
     }

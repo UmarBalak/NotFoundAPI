@@ -54,3 +54,4 @@ uvicorn
 python-dotenv
 arxiv
 psycopg2-binary
+passlib
