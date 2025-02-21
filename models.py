@@ -7,7 +7,8 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
-    Text
+    Text,
+    JSON
 )
 from sqlalchemy.orm import relationship
 from dotenv import load_dotenv
@@ -41,5 +42,15 @@ class Space(Base):
     category = Column(String, nullable=False)
     github_id = Column(String, nullable=False)
     description = Column(Text, nullable=False)
+    collaborators = Column(JSON, default=[])
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+class CollaborationRequest(Base):
+    __tablename__ = "collaboration_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    space_id = Column(Integer, nullable=False)
+    collaborator_email = Column(String, nullable=False)
+    status = Column(String, default="pending", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
