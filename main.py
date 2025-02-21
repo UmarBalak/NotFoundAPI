@@ -90,26 +90,32 @@ def login(login_data: LoginUser, db: SQLAlchemySession = Depends(get_db)):
 
 @app.post("/spaces")
 def create_space(space: CreateSpace, db: SQLAlchemySession = Depends(get_db)):
+    # Validate input
+    if not space.space_name or not space.tags or not space.category or not space.github_id:
+        raise HTTPException(status_code=400, detail="All fields are required")
+    
+    # Clean tags
+    tags = [tag.strip() for tag in space.tags if tag.strip()]
+    if not tags:
+        raise HTTPException(status_code=400, detail="At least one valid tag is required")
+    
     new_space = Space(
-        space_name=space.space_name,
-        tags=",".join(space.tags),
-        category=space.category,
-        github_id=space.github_id,
-        description=space.description
+        space_name=space.space_name.strip(),
+        tags=",".join(tags),
+        category=space.category.strip(),
+        github_id=space.github_id.strip(),
+        description=space.description.strip()
     )
+    
     try:
         db.add(new_space)
-        print("New space added")
         db.commit()
-        print("New space committed")
         db.refresh(new_space)
+        return {"message": "Space created successfully!", "space_id": new_space.id}
     except Exception as e:
-        print(f"Database error: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred.")
-
-    
-    return {"message": "Space created successfully!", "space_id": new_space.id}
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error occurred: {str(e)}")
 
 @app.get("/spaces")
 def get_spaces(db: SQLAlchemySession = Depends(get_db)):
