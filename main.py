@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from models import Base, engine, User, SessionLocal
+from models import Base, engine, User, SessionLocal, Space
 from sqlalchemy.orm import Session as SQLAlchemySession
 from sqlalchemy import or_
 from passlib.context import CryptContext
@@ -37,6 +37,13 @@ class CreateUser(BaseModel):
 class LoginUser(BaseModel):
     email: str
     password: str
+
+class CreateSpace(BaseModel):
+    space_name: str
+    tags: List[str]
+    category: str
+    github_id: str
+    description: str
 
 app = FastAPI()
 
@@ -80,3 +87,24 @@ def login(login_data: LoginUser, db: SQLAlchemySession = Depends(get_db)):
             "email": user.email
         }
     }
+
+@app.post("/spaces")
+def create_space(space: CreateSpace, db: SQLAlchemySession = Depends(get_db)):
+    new_space = Space(
+        space_name=space.space_name,
+        tags=",".join(space.tags),
+        category=space.category,
+        github_id=space.github_id,
+        description=space.description
+    )
+    
+    db.add(new_space)
+    db.commit()
+    db.refresh(new_space)
+    
+    return {"message": "Space created successfully!", "space_id": new_space.id}
+
+@app.get("/spaces")
+def get_spaces(db: SQLAlchemySession = Depends(get_db)):
+    spaces = db.query(Space).all()
+    return spaces
