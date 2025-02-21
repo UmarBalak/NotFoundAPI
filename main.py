@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from models import Base, engine, User, SessionLocal, Space, CollaborationRequest
+from models import Base, engine, User, SessionLocal, Space
 from sqlalchemy.orm import Session as SQLAlchemySession
 from sqlalchemy import or_
 from passlib.context import CryptContext
@@ -44,10 +44,6 @@ class CreateSpace(BaseModel):
     category: str
     github_id: str
     description: str
-
-class CollaborationRequestCreate(BaseModel):
-    space_id: int
-    collaborator_email: str
 
 app = FastAPI()
 
@@ -125,60 +121,3 @@ def create_space(space: CreateSpace, db: SQLAlchemySession = Depends(get_db)):
 def get_spaces(db: SQLAlchemySession = Depends(get_db)):
     spaces = db.query(Space).all()
     return spaces
-
-@app.get("/spaces/{category}")
-def get_spaces_by_category(category: str, db: SQLAlchemySession = Depends(get_db)):
-    spaces = db.query(Space).filter(Space.category == category).all()
-    return spaces
-
-@app.post("/collaborate")
-def request_collaboration(request: CollaborationRequestCreate, db: SQLAlchemySession = Depends(get_db)):
-    space = db.query(Space).filter(Space.id == request.space_id).first()
-    if not space:
-        raise HTTPException(status_code=404, detail="Space not found")
-    
-    existing_request = db.query(CollaborationRequest).filter(
-        CollaborationRequest.space_id == request.space_id,
-        CollaborationRequest.collaborator_email == request.collaborator_email
-    ).first()
-    
-    if existing_request:
-        raise HTTPException(status_code=400, detail="Collaboration request already exists")
-    
-    new_request = CollaborationRequest(
-        space_id=request.space_id,
-        collaborator_email=request.collaborator_email
-    )
-    
-    db.add(new_request)
-    db.commit()
-    db.refresh(new_request)
-    return {"message": "Collaboration request sent"}
-
-@app.get("/notifications")
-def get_notifications(email: str, db: SQLAlchemySession = Depends(get_db)):
-    requests = db.query(CollaborationRequest).filter(CollaborationRequest.collaborator_email == email).all()
-    notifications = []
-    for request in requests:
-        space = db.query(Space).filter(Space.id == request.space_id).first()
-        if space:
-            notifications.append({
-                "space_id": space.id,
-                "space_name": space.space_name,
-                "status": request.status
-            })
-    return notifications
-
-@app.post("/approve_collaboration")
-def approve_collaboration(space_id: int, collaborator_email: str, db: SQLAlchemySession = Depends(get_db)):
-    request = db.query(CollaborationRequest).filter(
-        CollaborationRequest.space_id == space_id,
-        CollaborationRequest.collaborator_email == collaborator_email
-    ).first()
-    
-    if not request:
-        raise HTTPException(status_code=404, detail="Collaboration request not found")
-    
-    request.status = "approved"
-    db.commit()
-    return {"message": "Collaboration approved"}
