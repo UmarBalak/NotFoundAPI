@@ -126,6 +126,11 @@ def get_spaces(db: SQLAlchemySession = Depends(get_db)):
     spaces = db.query(Space).all()
     return spaces
 
+@app.get("/spaces/{category}")
+def get_spaces_by_category(category: str, db: SQLAlchemySession = Depends(get_db)):
+    spaces = db.query(Space).filter(Space.category == category).all()
+    return spaces
+
 @app.post("/collaborate")
 def request_collaboration(request: CollaborationRequestCreate, db: SQLAlchemySession = Depends(get_db)):
     space = db.query(Space).filter(Space.id == request.space_id).first()
