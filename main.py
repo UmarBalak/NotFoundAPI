@@ -97,9 +97,11 @@ def create_space(space: CreateSpace, db: SQLAlchemySession = Depends(get_db)):
         github_id=space.github_id,
         description=space.description
     )
-    
+    print(new_space)
     db.add(new_space)
+    print("new space added")
     db.commit()
+    print("new space committed")
     db.refresh(new_space)
     
     return {"message": "Space created successfully!", "space_id": new_space.id}
