@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from .models import Base, engine, User, SessionLocal
+from models import Base, engine, User, SessionLocal
 from sqlalchemy.orm import Session as SQLAlchemySession
 from sqlalchemy import or_
 
