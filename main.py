@@ -45,7 +45,7 @@ class CreateSpace(BaseModel):
     github_id: str
     description: str
 
-class CollaborationRequest(BaseModel):
+class CollaborationRequestCreate(BaseModel):
     space_id: int
     collaborator_email: str
 
@@ -127,7 +127,7 @@ def get_spaces(db: SQLAlchemySession = Depends(get_db)):
     return spaces
 
 @app.post("/collaborate")
-def request_collaboration(request: CollaborationRequest, db: SQLAlchemySession = Depends(get_db)):
+def request_collaboration(request: CollaborationRequestCreate, db: SQLAlchemySession = Depends(get_db)):
     space = db.query(Space).filter(Space.id == request.space_id).first()
     if not space:
         raise HTTPException(status_code=404, detail="Space not found")

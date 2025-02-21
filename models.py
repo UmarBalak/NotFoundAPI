@@ -8,7 +8,8 @@ from sqlalchemy import (
     String,
     DateTime,
     Text,
-    JSON
+    JSON,
+    Index
 )
 from sqlalchemy.orm import relationship
 from dotenv import load_dotenv
@@ -49,8 +50,13 @@ class Space(Base):
 class CollaborationRequest(Base):
     __tablename__ = "collaboration_requests"
     id = Column(Integer, primary_key=True, index=True)
-    space_id = Column(Integer, nullable=False)
-    collaborator_email = Column(String, nullable=False)
+    space_id = Column(Integer, nullable=False, index=True)
+    collaborator_email = Column(String, nullable=False, index=True)
     status = Column(String, default="pending", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Add composite index for space_id and collaborator_email
+    __table_args__ = (
+        Index('idx_space_collaborator', 'space_id', 'collaborator_email', unique=True),
+    )
